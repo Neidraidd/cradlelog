@@ -1,0 +1,19 @@
+{
+  "name": "cradlelog",
+  "version": "1.0.0",
+  "description": "A small self-hosted feed and nappy log for new parents, installable as a phone app.",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check public/app.js && node --check public/sw.js",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

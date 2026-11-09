@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cradlelog</title>
+  <meta name="theme-color" content="#14121a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cradlelog">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- One drawn icon set so every phone shows the same marks (emoji differ per platform). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-bottle" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M10.5 1h3v1.6h.7c.4 0 .8.4.8.8v1.4l1.4.8c.9.5 1.6 1.5 1.6 2.6V20a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8.2c0-1.1.6-2.1 1.6-2.6L9 4.8V3.4c0-.4.4-.8.8-.8h.7ZM8.5 11v1.4H12V11Zm0 3.2v1.4H12v-1.4Zm0 3.2v1.4H12v-1.4Z"/></symbol>
+    <symbol id="i-breast" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4.5"/><path d="M2 12.5h3.2c.4 3.6 3.3 6.2 6.8 6.2s6.4-2.6 6.8-6.2H22c-.4 5.3-4.7 9.5-10 9.5S2.4 17.8 2 12.5Z"/></symbol>
+    <symbol id="i-nappy" viewBox="0 0 24 24"><path d="M2 5h20v3.4H2Z"/><path d="M2.4 10h19.2c-.6 6.2-4.6 10-9.6 10s-9-3.8-9.6-10Zm4.8 2.2a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Zm9.6 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z" fill-rule="evenodd"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M16.2 2.6a2 2 0 0 1 2.8 0l2.4 2.4a2 2 0 0 1 0 2.8L19.6 9.6 14.4 4.4ZM13 5.8l5.2 5.2L8 21.2 2.4 22l.8-5.6Z"/></symbol>
+    <symbol id="i-wee" viewBox="0 0 24 24"><path d="M12 2c.4 0 7 7.6 7 12.4a7 7 0 0 1-14 0C5 9.6 11.6 2 12 2Z"/></symbol>
+    <symbol id="i-poo" viewBox="0 0 24 24"><path d="M11.6 2c1.8 1 2.3 2.4 1.8 3.8 1.9.2 3.2 1.5 3.3 3.2 2 .4 3.4 1.9 3.4 3.8 1.2.6 2 1.9 2 3.4C22 19 19.8 21 17 21H7c-2.8 0-5-2-5-4.8 0-1.5.8-2.8 2-3.4 0-1.9 1.4-3.4 3.4-3.8.1-1.8 1.5-3.1 3.4-3.2-.4-1.4-.1-2.8.8-3.8Z"/></symbol>
+    <symbol id="i-weight" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm6 3a6 6 0 0 0-5.6 3.8l2.2.9a3.6 3.6 0 0 1 2.2-2.1v2.6h2.4V7.6a3.6 3.6 0 0 1 2.2 2.1l2.2-.9A6 6 0 0 0 12 6Z"/></symbol>
+    <symbol id="i-sick" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20ZM8.5 8a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6Zm7 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6ZM6.8 15.6c1-1.3 1.8-1.3 2.6 0s1.7 1.3 2.6 0 1.7-1.3 2.6 0 1.7 1.3 2.6 0l.9 1c-1.4 1.8-2.8 1.8-3.9.4-.9 1.4-2.5 1.4-3.5 0-.9 1.4-2.5 1.4-3.5 0-1.1 1.4-2.5 1.4-3.9-.4Z"/></symbol>
+  </svg>
+
+  <!-- Loading, then either sign-in or the app. Also the "can't reach the server" state. -->
+  <section id="boot" class="gate" aria-live="polite">
+    <div class="gate-card">
+      <img src="/icons/icon.svg" alt="" width="64" height="64">
+      <h1>Cradlelog</h1>
+      <p id="boot-msg">Loading the feed log…</p>
+      <button class="btn" id="boot-retry" hidden>Try again</button>
+    </div>
+  </section>
+
+  <section id="gate" class="gate" hidden>
+    <div class="gate-card">
+      <img src="/icons/icon.svg" alt="" width="64" height="64">
+      <h1>Cradlelog</h1>
+      <p id="gate-msg">Enter the family passcode.</p>
+      <form id="gate-form">
+        <input id="gate-pass" type="password" autocomplete="current-password" placeholder="Passcode" aria-label="Passcode" required minlength="8" maxlength="256">
+        <input id="gate-pass2" type="password" autocomplete="new-password" placeholder="Type it again" aria-label="Type the passcode again" minlength="8" maxlength="256" hidden>
+        <button class="btn primary" type="submit" id="gate-btn">Sign in</button>
+        <p class="error" id="gate-err" role="alert"></p>
+      </form>
+    </div>
+  </section>
+
+  <main id="app" hidden>
+    <header class="top">
+      <div>
+        <h1>Cradlelog</h1>
+        <p class="age" id="age"></p>
+      </div>
+      <div class="top-right">
+        <span class="sync" id="sync" role="status"></span>
+        <button class="icon-btn" id="open-settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Zm7.43-2.53c.04-.32.07-.64.07-.97s-.03-.66-.07-1l2.11-1.63a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.3 7.3 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.58-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.49.49 0 0 0 .12.64L4.57 11c-.04.34-.07.67-.07 1s.03.65.07.97l-2.11 1.66a.49.49 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1.01c.22.08.49 0 .61-.22l2-3.46a.49.49 0 0 0-.12-.64l-2.11-1.66Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="status" aria-label="Feed status">
+      <p class="status-label">Since last feed</p>
+      <p class="since" id="since">No feeds yet</p>
+      <p class="status-sub" id="last-feed"></p>
+      <div class="open-feed" id="open-feed" hidden>
+        <p><b id="open-what">Bottle in progress</b><span id="open-since"></span></p>
+        <button type="button" class="btn primary" id="open-finish">Update</button>
+      </div>
+      <div class="next" id="next" hidden>
+        <span class="next-when" id="next-when"></span>
+        <span class="next-in" id="next-in"></span>
+      </div>
+      <dl class="today" id="today"></dl>
+    </section>
+
+    <nav class="quick" aria-label="Log something">
+      <button class="quick-btn k-bottle" data-kind="bottle"><svg class="ico" aria-hidden="true"><use href="#i-bottle"/></svg>Bottle</button>
+      <button class="quick-btn k-breast" data-kind="breast"><svg class="ico" aria-hidden="true"><use href="#i-breast"/></svg>Breast</button>
+      <button class="quick-btn k-nappy" data-kind="nappy"><svg class="ico" aria-hidden="true"><use href="#i-nappy"/></svg>Nappy</button>
+      <button class="quick-btn k-note" data-kind="note"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</button>
+    </nav>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" class="tab" data-tab="log" aria-selected="true">Log</button>
+      <button role="tab" class="tab" data-tab="trends" aria-selected="false">Trends</button>
+    </div>
+
+    <section id="tab-log" class="panel"></section>
+    <section id="tab-trends" class="panel" hidden></section>
+
+    <footer class="foot"><span id="version"></span></footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-msg"></span>
+    <span class="toast-actions">
+      <button type="button" id="toast-action" hidden>Undo</button>
+      <button type="button" id="toast-close">OK</button>
+    </span>
+  </div>
+
+  <!-- Add / edit sheet -->
+  <dialog id="sheet" class="sheet" aria-labelledby="sheet-title">
+    <form id="entry-form" method="dialog">
+      <div class="sheet-head">
+        <h2 id="sheet-title">Bottle</h2>
+        <button type="button" class="icon-btn" id="sheet-close" aria-label="Close">✕</button>
+      </div>
+
+      <p class="finish-hint" id="f-finish-hint" hidden></p>
+
+      <div class="field" id="f-kind">
+        <div class="seg" role="radiogroup" aria-label="Type">
+          <button type="button" role="radio" data-v="bottle">Bottle</button>
+          <button type="button" role="radio" data-v="breast">Breast</button>
+          <button type="button" role="radio" data-v="nappy">Nappy</button>
+          <button type="button" role="radio" data-v="note">Note</button>        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-time" id="f-time-label">Time</label>
+        <input id="f-time" type="datetime-local" required>
+        <div class="chips" id="time-chips" aria-label="Adjust time">
+          <button type="button" data-min="0">Now</button>
+          <button type="button" data-min="-5" aria-label="5 minutes earlier">−5 min</button>
+          <button type="button" data-min="-15" aria-label="15 minutes earlier">−15 min</button>
+          <button type="button" data-min="-30" aria-label="30 minutes earlier">−30 min</button>
+          <button type="button" data-min="-60" aria-label="1 hour earlier">−1 hour</button>
+        </div>
+      </div>
+
+      <div class="field" id="f-ml-wrap">
+        <label for="f-ml" id="f-ml-label">Amount</label>
+        <div class="ml-row">
+          <button type="button" class="step" data-step="-5" aria-label="5 ml less">−</button>
+          <div class="ml-display"><input id="f-ml" type="number" inputmode="numeric" min="0" max="1000" step="5" placeholder="?"><span>ml</span></div>
+          <button type="button" class="step" data-step="5" aria-label="5 ml more">+</button>
+        </div>
+        <div class="chips" id="ml-chips" aria-label="Common amounts"></div>
+      </div>
+
+      <div class="field" id="f-end-wrap" hidden>
+        <label for="f-end">Finished at</label>
+        <input id="f-end" type="datetime-local">
+        <div class="chips" id="end-chips" aria-label="Set finish time">
+          <button type="button" data-min="0">Now</button>
+          <button type="button" data-min="-5" aria-label="5 minutes ago">−5 min</button>
+          <button type="button" data-min="-15" aria-label="15 minutes ago">−15 min</button>
+          <button type="button" data-min="-30" aria-label="30 minutes ago">−30 min</button>
+          <button type="button" data-min="-60" aria-label="1 hour ago">−1 hour</button>
+        </div>
+        <label class="switch-row" for="f-forgot">
+          <span>
+            <span class="switch-title">Forgot to end</span>
+            <span class="switch-sub" id="f-forgot-sub">Save the feed, don't record a length</span>
+          </span>
+          <input id="f-forgot" type="checkbox" role="switch" aria-describedby="f-forgot-sub">
+        </label>
+      </div>
+
+      <div class="field" id="f-weight-wrap">
+        <label id="f-weight-label">Weight</label>
+        <div class="seg" id="f-unit" role="radiogroup" aria-label="Units">
+          <button type="button" role="radio" data-v="kg">kg</button>
+          <button type="button" role="radio" data-v="lb">lb and oz</button>
+        </div>
+        <div class="weight-row" id="f-kg-row">
+          <input id="f-kg" type="number" inputmode="decimal" min="0.5" max="30" step="0.01" placeholder="3.45" aria-labelledby="f-weight-label f-kg-unit"><span id="f-kg-unit">kg</span>
+        </div>
+        <div class="weight-row" id="f-lb-row">
+          <input id="f-lb" type="number" inputmode="numeric" min="1" max="66" step="1" placeholder="7" aria-label="Pounds"><span>lb</span>
+          <input id="f-oz" type="number" inputmode="decimal" min="0" max="15.9" step="0.1" placeholder="9" aria-label="Ounces"><span>oz</span>
+        </div>
+        <p class="hint" id="f-weight-other"></p>
+      </div>
+
+      <div class="field" id="f-side-wrap">
+        <label>Side</label>
+        <div class="seg" id="f-side" role="radiogroup" aria-label="Side">
+          <button type="button" role="radio" data-v="left">Left</button>
+          <button type="button" role="radio" data-v="right">Right</button>
+          <button type="button" role="radio" data-v="both">Both</button>
+        </div>
+      </div>
+
+      <div class="field" id="f-also">
+        <label>Also</label>
+        <div class="toggles">
+          <button type="button" class="toggle" data-flag="wee"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-wee"/></svg>Wee</button>
+          <button type="button" class="toggle" data-flag="poo"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-poo"/></svg>Poo</button>
+          <button type="button" class="toggle" data-flag="sick"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-sick"/></svg>Sick</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-note">Note</label>
+        <input id="f-note" type="text" maxlength="500" placeholder="e.g. top up, awake the whole time">
+      </div>
+
+      <div class="sheet-actions">
+        <button type="button" class="btn danger" id="f-delete" hidden>Delete</button>
+        <button type="button" class="btn" id="f-continue" hidden>Continue feed</button>
+        <button type="button" class="btn" id="f-start" hidden>Start feed now</button>
+        <button type="submit" class="btn primary" id="f-save">Save</button>
+      </div>
+      <p class="hint start-hint" id="f-start-hint" hidden>Start now to set the clock from the start of the feed. Add the amount when the feed is done.</p>
+    </form>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="settings" class="sheet" aria-labelledby="settings-title">
+    <form method="dialog">
+      <div class="sheet-head">
+        <h2 id="settings-title">Settings</h2>
+        <button class="icon-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="field">
+        <label class="switch-row" for="s-alerts">
+          <span>
+            <span class="switch-title">Feed alerts on this phone</span>
+            <span class="switch-sub" id="s-alerts-sub">A notification when the next feed is due, again if it's overdue, and if a started feed ends itself after an hour with no amount.</span>
+          </span>
+          <input id="s-alerts" type="checkbox" role="switch" aria-describedby="s-alerts-sub">
+        </label>
+        <p class="hint" id="s-alerts-note" hidden></p>
+        <button type="button" class="btn" id="s-alerts-test" hidden>Send a test alert</button>
+      </div>
+      <div class="field">
+        <label for="s-name">Baby's name</label>
+        <input id="s-name" type="text" maxlength="40" autocomplete="off" placeholder="Optional">
+        <p class="hint">Shown at the top of the app and in alerts. Stored on your server only.</p>
+      </div>
+      <div class="field">
+        <label for="s-birth">Date of birth</label>
+        <input id="s-birth" type="date">
+      </div>
+      <div class="field">
+        <label for="s-feed-min">Time between feeds</label>
+        <div class="feed-gap">
+          <span>Every</span>
+          <select id="s-feed-min" aria-label="Shortest time between feeds"></select>
+          <span>to</span>
+          <select id="s-feed-max" aria-label="Longest time between feeds"></select>
+        </div>
+        <p class="hint" id="s-feed-hint">Sets the "next feed" countdown on the home screen.</p>
+      </div>
+      <div class="field">
+        <label class="switch-row" for="s-breast">
+          <span>
+            <span class="switch-title">Breastfeeding</span>
+            <span class="switch-sub" id="s-breast-sub">Shows the Breast button. Turn off once feeding is all bottles; past breast feeds stay in the log.</span>
+          </span>
+          <input id="s-breast" type="checkbox" role="switch" aria-describedby="s-breast-sub">
+        </label>
+      </div>
+      <div class="field">
+        <a class="btn" href="/api/export.csv" download>Download all entries (CSV)</a>
+      </div>
+      <div class="field">
+        <button type="button" class="btn" id="s-import">Import entries from a CSV file</button>
+        <input id="s-import-file" type="file" accept=".csv,text/csv" hidden>
+        <p class="hint">Use a file saved with "Download all entries". Entries you already have are skipped, so importing twice is safe.</p>
+      </div>
+      <div class="field">
+        <button type="button" class="btn" id="s-signout">Sign out of this phone</button>
+      </div>
+      <p class="hint">Shared with everyone who has the passcode. To install, use "Add to Home Screen" in your browser menu.</p>
+    </form>
+  </dialog>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

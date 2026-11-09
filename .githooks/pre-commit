@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Auto-bumps VERSION on every commit: YYYYMM.NNNN. NNNN resets to 0001 the
+# first commit of a new month and otherwise goes up by 1. The service worker
+# cache is keyed on VERSION, so each deploy refreshes installed copies.
+#
+# One-time setup per clone (Git only looks in .git/hooks by default, so point
+# it here once):
+#   git config core.hooksPath .githooks
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+VERSION_FILE="VERSION"
+now_prefix=$(date +%Y%m)
+
+if [ -f "$VERSION_FILE" ]; then
+    current=$(tr -d '[:space:]' < "$VERSION_FILE")
+    current_prefix="${current%%.*}"
+    current_seq="${current##*.}"
+else
+    current_prefix=""
+    current_seq="0000"
+fi
+
+if [ "$current_prefix" = "$now_prefix" ]; then
+    # Strip any leading zeros before arithmetic (bash reads 0-prefixed
+    # numbers as octal otherwise, which breaks the moment a sequence
+    # hits 0008/0009).
+    next_seq=$(printf "%04d" $((10#$current_seq + 1)))
+else
+    next_seq="0001"
+fi
+
+new_version="${now_prefix}.${next_seq}"
+echo "$new_version" > "$VERSION_FILE"
+git add "$VERSION_FILE"
+echo "version: ${new_version}"
