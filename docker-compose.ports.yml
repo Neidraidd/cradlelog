@@ -1,0 +1,5 @@
+# Adds a host port for use with your own reverse proxy (Caddy, nginx...). Not needed on Coolify.
+services:
+  cradlelog:
+    ports:
+      - "127.0.0.1:8080:8080"

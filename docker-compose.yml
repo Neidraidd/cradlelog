@@ -1,18 +1,18 @@
-# Runs Cradlelog on 127.0.0.1:8080. Put a reverse proxy that terminates HTTPS in front of it (see README).
-# Copy .env.example to .env and fill it in first.
+# Cradlelog. Works as-is on Coolify (set the domain on the cradlelog service, port 8080).
+# No host port is published, so it can't clash with anything else on the server.
+# On a plain server, add the ports file to reach it from a reverse proxy:
+#   docker compose -f docker-compose.yml -f docker-compose.ports.yml up -d --build
 services:
   cradlelog:
     build: .
-    image: cradlelog:latest
-    container_name: cradlelog
     restart: unless-stopped
     environment:
       CRADLELOG_PASSCODE: ${CRADLELOG_PASSCODE:-}
-      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL (for example https://cradlelog.example.com) in .env}
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL (for example https://cradlelog.example.com)}
       CRADLELOG_TZ: ${CRADLELOG_TZ:-Europe/London}
       TRUST_PROXY: ${TRUST_PROXY:-1}
-    ports:
-      - "127.0.0.1:8080:8080"
+    expose:
+      - "8080"
     volumes:
       - cradlelog-data:/data
     read_only: true

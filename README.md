@@ -59,7 +59,7 @@ You need a server with Docker and a domain name pointing at it.
 git clone https://github.com/Neidraidd/cradlelog.git
 cd cradlelog
 cp .env.example .env        # then set PUBLIC_URL, for example https://cradlelog.example.com
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.ports.yml up -d --build
 ```
 
 Cradlelog serves plain HTTP on `127.0.0.1:8080` and expects a reverse proxy in front to provide HTTPS
@@ -75,25 +75,33 @@ Then **open your address straight away.** The first visit asks you to choose the
 (8 characters or more). Until you do, whoever opens the page first gets to choose it, so don't leave a fresh
 install unclaimed. Prefer no window at all? Set `CRADLELOG_PASSCODE` in `.env` and skip the screen.
 
-Update later with `git pull && docker compose up -d --build`.
+Update later with `git pull` and the same `docker compose ... up -d --build` command.
 
 ### Deploy on Coolify
 
-Coolify builds straight from the repo's `Dockerfile` and handles HTTPS for you, so you don't need the Caddy step.
+Coolify builds from the repo and handles HTTPS for you, so you don't need the Caddy step. Either build pack works.
 
-1. **New resource**, then **Public Repository** (or connect your GitHub app for a private fork), and paste the repo URL. Branch `main`.
-2. **Build pack: Dockerfile.** Under **Ports Exposes** enter `8080`.
-3. **Domains:** enter your address with `https://`, for example `https://cradlelog.example.com`.
-4. **Environment variables:**
-   - `PUBLIC_URL` = the same `https://` address as the domain (needed for secure cookies and HSTS).
-   - `TRUST_PROXY` = `1` (Coolify's proxy sits in front of the app).
-   - `CRADLELOG_PASSCODE` = your passcode, 8+ characters. Setting it here is recommended: Coolify makes the site
-     public the moment it deploys, and this way nobody can claim a fresh install before you do. Mark it as a secret.
-   - `CRADLELOG_TZ` = your timezone, for example `Europe/London` (optional).
-5. **Persistent Storage:** add a **Volume Mount** with destination `/data`. Use a volume, not a directory bind mount:
-   the app runs as a non-root user and a bind mount is owned by root, which stops the database being written. Without
-   this storage your data is lost on every redeploy.
-6. **Deploy.** For updates, push to GitHub and redeploy, or turn on auto-deploy and add Coolify's webhook to the repo.
+**Docker Compose (uses the repo's `docker-compose.yml`)**
+1. **New resource**, then **Public Repository**, URL of this repo, branch `main`, build pack **Docker Compose**.
+2. On the `cradlelog` service, set **Domains** to your address with the port, for example `https://cradlelog.example.com:8080`.
+3. Set the environment variables below.
+4. The compose file publishes no host port, so it can't clash with anything else on the server. Don't add one.
+5. The `cradlelog-data` volume is created for you and kept across deploys.
+
+**Dockerfile (simplest)**
+1. Same repo, build pack **Dockerfile**, **Ports Exposes** `8080`, **Domains** your address with `https://`.
+2. **Persistent Storage:** add a **Volume Mount** with destination `/data`. Use a volume, not a directory bind mount:
+   the app runs as a non-root user and a bind mount is owned by root, which stops the database being written.
+   Without this storage your data is lost on every redeploy.
+
+**Environment variables (both)**
+- `PUBLIC_URL`: your `https://` address, the same as the domain (needed for secure cookies and HSTS).
+- `TRUST_PROXY`: `1` (Coolify's proxy sits in front of the app).
+- `CRADLELOG_PASSCODE`: your passcode, 8+ characters, marked as a secret. Recommended: Coolify makes the site
+  public the moment it deploys, and this way nobody can claim a fresh install before you do.
+- `CRADLELOG_TZ`: your timezone, for example `Europe/London` (optional).
+
+Then **Deploy**. For updates, push to GitHub and redeploy, or turn on auto-deploy and add Coolify's webhook to the repo.
 
 If a CDN such as Cloudflare sits in front of Coolify, sign-in lockouts will see the CDN's address rather than each
 visitor's, so one person's wrong guesses can lock everyone out. Leave the CDN proxy off for this app.
