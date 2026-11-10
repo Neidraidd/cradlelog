@@ -77,6 +77,27 @@ install unclaimed. Prefer no window at all? Set `CRADLELOG_PASSCODE` in `.env` a
 
 Update later with `git pull && docker compose up -d --build`.
 
+### Deploy on Coolify
+
+Coolify builds straight from the repo's `Dockerfile` and handles HTTPS for you, so you don't need the Caddy step.
+
+1. **New resource**, then **Public Repository** (or connect your GitHub app for a private fork), and paste the repo URL. Branch `main`.
+2. **Build pack: Dockerfile.** Under **Ports Exposes** enter `8080`.
+3. **Domains:** enter your address with `https://`, for example `https://cradlelog.example.com`.
+4. **Environment variables:**
+   - `PUBLIC_URL` = the same `https://` address as the domain (needed for secure cookies and HSTS).
+   - `TRUST_PROXY` = `1` (Coolify's proxy sits in front of the app).
+   - `CRADLELOG_PASSCODE` = your passcode, 8+ characters. Setting it here is recommended: Coolify makes the site
+     public the moment it deploys, and this way nobody can claim a fresh install before you do. Mark it as a secret.
+   - `CRADLELOG_TZ` = your timezone, for example `Europe/London` (optional).
+5. **Persistent Storage:** add a **Volume Mount** with destination `/data`. Use a volume, not a directory bind mount:
+   the app runs as a non-root user and a bind mount is owned by root, which stops the database being written. Without
+   this storage your data is lost on every redeploy.
+6. **Deploy.** For updates, push to GitHub and redeploy, or turn on auto-deploy and add Coolify's webhook to the repo.
+
+If a CDN such as Cloudflare sits in front of Coolify, sign-in lockouts will see the CDN's address rather than each
+visitor's, so one person's wrong guesses can lock everyone out. Leave the CDN proxy off for this app.
+
 ### Put it on your phone
 
 Open your address in the phone's browser, then:
