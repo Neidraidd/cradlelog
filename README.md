@@ -48,7 +48,7 @@ That number is the biggest thing on the screen.
 - **Works offline.** Entries are queued on the phone and sync when the signal comes back.
 - Shared by everyone with the passcode; changes reach the other phones within about half a minute.
 - Dark by default, follows the phone's light or dark setting, 44px tap targets, and charts you can step through with the keyboard.
-- Optional baby's name and date of birth in Settings (stored on your server only), a switch to hide the Breast
+- Optional baby's name and date of birth in Settings (stored on your server only). The name replaces "Cradlelog" at the top, and the app icon and home-screen label take the first initial and name (re-add the app to your Home Screen after setting it), a switch to hide the Breast
   button once you're on bottles, and CSV **export and import**.
 
 ## Quick start

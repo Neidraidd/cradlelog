@@ -103,6 +103,26 @@ test('the baby name is a family setting, trimmed and length-limited', async () =
   assert.ok(!('babyName' in out), 'signed-out visitors must not see the name');
 });
 
+test('the icon, tab name and manifest follow the baby name, for signed-in devices only', async () => {
+  const cookie = await login();
+  const put = (body) => call('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json', cookie }, body: JSON.stringify(body) });
+  const png = async (h) => Buffer.from(await (await call('/icons/icon-192.png', { headers: h })).arrayBuffer());
+  const plain = await png({});
+  await put({ babyName: 'Zoë' });
+  const signedIn = await png({ cookie });
+  assert.notDeepEqual(signedIn, plain, 'signed-in devices get the Z icon');
+  assert.deepEqual(await png({}), plain, 'signed-out visitors still get the plain icon');
+  assert.match(await (await call('/icons/icon.svg', { headers: { cookie } })).text(), />Z<\/text>/);
+  assert.match(await (await call('/icons/icon.svg')).text(), />C<\/text>/);
+  const m = await (await call('/manifest.webmanifest', { headers: { cookie } })).json();
+  assert.equal(m.name, 'Zoë');
+  assert.equal((await (await call('/manifest.webmanifest')).json()).name, 'Cradlelog');
+  await put({ babyName: '日本' }); // no Latin letter: falls back to the plain icon
+  assert.deepEqual(await png({ cookie }), plain);
+  await put({ babyName: '' });
+  assert.deepEqual(await png({ cookie }), plain);
+});
+
 test('CSV import adds entries once, understands older exports, and rejects junk', async () => {
   const cookie = await login();
   const csv = [

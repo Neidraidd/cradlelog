@@ -248,11 +248,6 @@ function shortDay(key) {
   return new Date(Y, M - 1, D).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 function ageText() {
-  const name = state.babyName;
-  const age = ageOnly();
-  return name && age ? `${name} · ${age}` : name || age;
-}
-function ageOnly() {
   if (!state.birth) return '';
   const [Y, M, D] = state.birth.split('-').map(Number);
   const b = new Date(Y, M - 1, D);
@@ -299,6 +294,11 @@ function render() {
   $('.quick-btn.k-breast').hidden = state.hideBreast;
   $('.quick').classList.toggle('three', state.hideBreast);
   $('#age').textContent = ageText();
+  // The baby's name replaces the app name at the top, in the tab title and as the home-screen label.
+  const title = state.babyName || 'Cradlelog';
+  $('#app-title').textContent = title;
+  document.title = title;
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', title);
   const sync = $('#sync');
   sync.textContent = state.outbox.length ? `${state.outbox.length} to sync` : state.online ? '' : 'Offline';
   sync.classList.toggle('warn', !!state.outbox.length || !state.online);

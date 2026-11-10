@@ -468,9 +468,49 @@ async function api(req, res, url) {
   return send(res, 404, { error: 'not found' });
 }
 
+// The icon, home-screen name and tab title follow the baby's name, but only for signed-in devices:
+// a signed-out visitor always gets the plain Cradlelog icon and name, so the name never leaks.
+function iconLetter(req) {
+  if (!authed(req)) return null;
+  const first = (getSetting('babyName') || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').match(/[A-Za-z]/)?.[0];
+  return first ? first.toUpperCase() : null;
+}
+const ICON_FILE = /^\/icons\/(icon-180|icon-192|icon-512|icon-512-maskable)\.png$/;
+function personalised(req, res, rel) {
+  const letter = iconLetter(req);
+  const headers = { 'Cache-Control': 'no-cache', Vary: 'Cookie' };
+  const m = ICON_FILE.exec(rel);
+  if (m && letter) {
+    fs.readFile(path.join(PUBLIC, 'icons', 'letters', `${m[1]}-${letter}.png`), (err, buf) => {
+      if (err) return fs.readFile(path.join(PUBLIC, rel), (e2, b2) => (e2 ? send(res, 404, 'not found') : (res.writeHead(200, { ...headers, 'Content-Type': MIME['.png'] }), res.end(b2))));
+      res.writeHead(200, { ...headers, 'Content-Type': MIME['.png'] }); res.end(buf);
+    });
+    return true;
+  }
+  if (rel === '/icons/icon.svg' && letter) {
+    fs.readFile(path.join(PUBLIC, rel), 'utf8', (err, svg) => {
+      if (err) return send(res, 404, 'not found');
+      res.writeHead(200, { ...headers, 'Content-Type': MIME['.svg'] }); res.end(svg.replace('>C</text>', `>${letter}</text>`));
+    });
+    return true;
+  }
+  if (rel === '/manifest.webmanifest') {
+    fs.readFile(path.join(PUBLIC, rel), 'utf8', (err, txt) => {
+      if (err) return send(res, 404, 'not found');
+      const name = authed(req) ? getSetting('babyName') : '';
+      let out = txt;
+      if (name) { const m2 = JSON.parse(txt); m2.name = name; m2.short_name = name.slice(0, 12); out = JSON.stringify(m2); }
+      res.writeHead(200, { ...headers, 'Content-Type': MIME['.webmanifest'] }); res.end(out);
+    });
+    return true;
+  }
+  return false;
+}
+
 function serveStatic(req, res, url) {
   let rel = decodeURIComponent(url.pathname);
   if (rel === '/') rel = '/index.html';
+  if (personalised(req, res, rel)) return;
   const file = path.normalize(path.join(PUBLIC, rel));
   if (!file.startsWith(PUBLIC + path.sep)) return send(res, 403, 'forbidden');
   fs.readFile(file, (err, buf) => {
