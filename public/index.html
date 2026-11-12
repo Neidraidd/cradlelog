@@ -115,6 +115,7 @@
         <h2 id="sheet-title">Bottle</h2>
         <button type="button" class="icon-btn" id="sheet-close" aria-label="Close">✕</button>
       </div>
+      <button type="button" class="sheet-when" id="f-when" hidden></button>
 
       <p class="finish-hint" id="f-finish-hint" hidden></p>
 
@@ -126,7 +127,7 @@
           <button type="button" role="radio" data-v="note">Note</button>        </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="f-time-wrap">
         <label for="f-time" id="f-time-label">Time</label>
         <input id="f-time" type="datetime-local" required>
         <div class="chips" id="time-chips" aria-label="Adjust time">
@@ -152,6 +153,12 @@
         </div>
         <div class="chips" id="ml-chips" aria-label="Common amounts"></div>
       </div>
+
+      <div class="bottlebar" id="f-bottlebar" hidden>
+        <div class="bb-track"><div class="bb-drunk" id="bb-drunk"></div><div class="bb-left"></div></div>
+        <div class="bb-labels"><span class="d" id="bb-d"></span><span class="l" id="bb-l"></span></div>
+      </div>
+      <button type="button" id="f-finished" hidden>Finished the whole bottle</button>
 
       <div class="field" id="f-end-wrap" hidden>
         <label for="f-end">Finished at</label>
@@ -206,7 +213,7 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="f-note-wrap">
         <label for="f-note">Note</label>
         <input id="f-note" type="text" maxlength="500" placeholder="e.g. top up, awake the whole time">
       </div>
@@ -214,8 +221,12 @@
       <div class="sheet-actions">
         <button type="button" class="btn danger" id="f-delete" hidden>Delete</button>
         <button type="button" class="btn" id="f-continue" hidden>Continue feed</button>
-        <button type="button" class="btn" id="f-start" hidden>Start feed now</button>
         <button type="submit" class="btn primary" id="f-save">Save</button>
+      </div>
+      <div class="sheet-more" id="sheet-more" hidden>
+        <button type="button" class="btn" id="f-start" hidden>Start feed now</button>
+        <button type="button" class="btn" id="f-nappy-btn" hidden aria-pressed="false">Nappy</button>
+        <button type="button" class="btn" id="f-note-btn" hidden aria-pressed="false">Note</button>
       </div>
       <p class="hint start-hint" id="f-start-hint" hidden>Start now to set the clock from the start of the feed. Add the amount when the feed is done.</p>
     </form>

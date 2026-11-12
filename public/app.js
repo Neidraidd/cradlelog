@@ -732,6 +732,8 @@ $('#tab-trends').addEventListener('click', (ev) => {
 // ---------- entry sheet ----------
 const sheet = $('#sheet');
 let draft = null;
+// Lean bottle sheet: which extras (time, nappy, note) have been opened by their buttons.
+let sheetExtras = { time: false, nappy: false, note: false };
 
 function lastMl() {
   const b = state.entries.filter((e) => e.kind === 'bottle' && e.ml);
@@ -745,6 +747,7 @@ function lastMade() {
 
 function openSheet(kindOrEntry) {
   const editing = typeof kindOrEntry === 'object';
+  sheetExtras = { time: false, nappy: false, note: false };
   draft = editing
     ? { ...kindOrEntry, _edit: true }
     : { id: crypto.randomUUID(), kind: kindOrEntry, ts: new Date().toISOString(), ml: kindOrEntry === 'bottle' ? lastMl() : null, made_ml: kindOrEntry === 'bottle' ? lastMade() : null,
@@ -771,31 +774,65 @@ function syncSheet() {
   const k = draft.kind;
   const finishing = draft._edit && draft.open;
   const canStart = !draft._edit && (k === 'bottle' || k === 'breast');
+  // New bottles and open-bottle finishes get the lean sheet: made vs drunk, extras on demand.
+  const lean = k === 'bottle' && (!draft._edit || draft.open);
+  sheet.classList.toggle('lean', lean);
   $('#sheet-title').textContent = finishing ? `Finish ${KIND_LABEL[k].toLowerCase()}` : draft._edit ? `Edit ${KIND_LABEL[k].toLowerCase()}` : KIND_LABEL[k];
   $('#f-finish-hint').hidden = !finishing;
   if (finishing) {
     const started = new Date(draft.ts);
-    $('#f-finish-hint').innerHTML = `Started at <b>${hm(started)}</b>, ${dur(Date.now() - started)} ago. ${k === 'bottle' ? 'Add how much was taken, then' : 'When the feed is done,'} tap Continue feed if the feed isn’t over, or Finish feed if it is.`;
+    $('#f-finish-hint').innerHTML = lean
+      ? `Started at <b>${hm(started)}</b>, ${dur(Date.now() - started)} ago.`
+      : `Started at <b>${hm(started)}</b>, ${dur(Date.now() - started)} ago. ${k === 'bottle' ? 'Add how much was taken, then' : 'When the feed is done,'} tap Continue feed if the feed isn’t over, or Finish feed if it is.`;
   }
+  // The time is a one-line summary until someone taps it to change it.
+  const t = new Date($('#f-time').value);
+  const valid = !Number.isNaN(t.getTime());
+  $('#f-when').hidden = !lean;
+  if (lean && valid) {
+    const when = finishing || draft.open ? `Started at <b>${hm(t)}</b>`
+      : Math.abs(Date.now() - t) < 60000 ? `Now · <b>${hm(t)}</b>`
+      : `<b>${hm(t)}</b>${dayKey(t) !== dayKey(new Date()) ? ` · ${dayLabel(dayKey(t))}` : ''}`;
+    $('#f-when').innerHTML = when + ' <span class="when-edit">(change)</span>';
+  }
+  $('#f-time-wrap').hidden = lean && !sheetExtras.time;
   $('#f-save').textContent = finishing ? 'Finish feed' : 'Save';
   $('#f-continue').hidden = !finishing;
   $('#f-end-wrap').hidden = !finishing;
-  $('#f-ml-label').textContent = finishing ? 'Amount so far' : 'Amount';
+  $('#f-ml-label').textContent = finishing ? 'Amount drunk so far' : 'Amount drunk';
   $('#f-time-label').textContent = finishing || draft.open ? 'Started at' : 'Time';
   $('#f-start').hidden = !canStart;
-  $('#f-start-hint').hidden = !canStart;
+  $('#f-start-hint').hidden = !canStart || lean;
   $$('#f-kind button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === k)));
   $('#f-kind [data-v="breast"]').hidden = state.hideBreast && k !== 'breast';
   $('#f-ml-wrap').hidden = !(k === 'bottle' || k === 'breast');
   $('#f-side-wrap').hidden = k !== 'breast';
   $('#f-weight-wrap').hidden = k !== 'weight';
-  $('#f-also').hidden = k === 'weight';
+  $('#f-also').hidden = k === 'weight' || (lean && !sheetExtras.nappy);
+  $('#f-note-wrap').hidden = lean && !sheetExtras.note;
+  for (const [id, on] of [['#f-nappy-btn', sheetExtras.nappy], ['#f-note-btn', sheetExtras.note]]) {
+    $(id).hidden = !lean;
+    $(id).setAttribute('aria-pressed', String(on));
+  }
+  $('#sheet-more').hidden = $('#f-start').hidden && !lean;
   if (k === 'weight') syncWeight();
   $$('#f-side button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === draft.side)));
   $$('.toggle').forEach((b) => b.setAttribute('aria-pressed', String(!!draft[b.dataset.flag])));
   $('#made-wrap').hidden = k !== 'bottle';
   $('#made-chips').innerHTML = state.feedSizes.map((v) => `<button type="button" data-made="${v}" aria-pressed="${draft.made_ml === v}" class="${draft.made_ml === v ? 'on' : ''}">${v}</button>`).join('');
-  $('#ml-chips').innerHTML = ML_PRESETS.map((v) => `<button type="button" data-ml="${v}" aria-pressed="${Number($('#f-ml').value) === v}" class="${Number($('#f-ml').value) === v ? 'on' : ''}">${v}</button>`).join('');
+  const presets = lean ? state.feedSizes : ML_PRESETS;
+  $('#ml-chips').innerHTML = presets.map((v) => `<button type="button" data-ml="${v}" aria-pressed="${Number($('#f-ml').value) === v}" class="${Number($('#f-ml').value) === v ? 'on' : ''}">${v}</button>`).join('');
+  // The bottle bar: made splits into drunk (solid) and left (hatched), with the numbers written out.
+  const mlVal = $('#f-ml').value === '' ? null : Number($('#f-ml').value);
+  const made = draft.made_ml;
+  $('#f-bottlebar').hidden = !(lean && made);
+  if (lean && made) {
+    $('#bb-drunk').style.width = `${mlVal == null ? 0 : Math.min(100, (mlVal / made) * 100)}%`;
+    $('#bb-d').textContent = mlVal == null ? 'No amount yet' : `${mlVal} ml ${finishing ? 'so far' : 'drunk'}`;
+    const left = made - (mlVal || 0);
+    $('#bb-l').textContent = left <= 0 ? 'nothing left' : `${left} ml left`;
+  }
+  $('#f-finished').hidden = !(lean && made && mlVal !== made && !finishing);
 }
 
 $$('.quick-btn').forEach((b) => b.addEventListener('click', () => openSheet(b.dataset.kind)));
@@ -823,7 +860,13 @@ $('#time-chips').addEventListener('click', (ev) => {
   const base = Number(b.dataset.min) === 0 ? new Date() : new Date($('#f-time').value || Date.now());
   base.setMinutes(base.getMinutes() + Number(b.dataset.min));
   $('#f-time').value = toLocalInput(base);
+  syncSheet();
 });
+$('#f-time').addEventListener('input', syncSheet);
+$('#f-when').addEventListener('click', () => { sheetExtras.time = !sheetExtras.time; syncSheet(); });
+$('#f-nappy-btn').addEventListener('click', () => { sheetExtras.nappy = !sheetExtras.nappy; syncSheet(); });
+$('#f-note-btn').addEventListener('click', () => { sheetExtras.note = !sheetExtras.note; syncSheet(); });
+$('#f-finished').addEventListener('click', () => { $('#f-ml').value = draft.made_ml; syncSheet(); });
 $$('.step').forEach((b) => b.addEventListener('click', () => {
   const v = Math.max(0, (Number($('#f-ml').value) || 0) + Number(b.dataset.step));
   $('#f-ml').value = v;

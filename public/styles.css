@@ -388,3 +388,36 @@ input[role="switch"]:checked::after { left: 23px; background: #fff; }
   .sheet[open] { animation: rise 0.18s ease-out; }
   @keyframes rise { from { transform: translateY(24px); opacity: 0.6; } }
 }
+
+/* ---------- lean bottle sheet: made vs drunk ---------- */
+.sheet-when {
+  display: block; background: none; border: 0; padding: 2px 0 6px;
+  color: var(--muted); font-size: 0.875rem; text-align: left;
+}
+.sheet-when b { color: var(--text); font-weight: 600; }
+.when-edit { font-size: 0.75rem; }
+.sheet.lean #made-wrap, .sheet.lean #f-ml-wrap {
+  background: var(--surface-2); border-radius: 18px; padding: 12px 14px;
+}
+.sheet.lean #made-wrap > label, .sheet.lean #f-ml-wrap > label {
+  text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem;
+}
+.sheet.lean #made-chips { flex-wrap: nowrap; }
+.sheet.lean #made-chips button { flex: 1; min-width: 0; padding: 0 8px; }
+.sheet.lean #ml-chips { justify-content: center; flex-wrap: nowrap; }
+.sheet.lean #ml-chips button { flex: 1; min-width: 0; padding: 0 8px; }
+.bottlebar { margin: 2px 0 12px; }
+.bb-track { display: flex; height: 24px; border-radius: 999px; overflow: hidden; background: var(--surface-2); }
+.bb-drunk { background: var(--bottle); width: 0; }
+.bb-left { flex: 1; background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 6px, var(--line) 6px, var(--line) 12px); }
+.bb-labels { display: flex; justify-content: space-between; font-size: 0.8125rem; margin-top: 6px; }
+.bb-labels .d { color: var(--accent-text); font-weight: 600; }
+.bb-labels .l { color: var(--muted); }
+#f-finished {
+  width: 100%; background: none; border: 1.5px dashed var(--edge); color: var(--muted);
+  border-radius: 16px; padding: 12px 0; font-size: 0.9375rem; font-weight: 600; margin-bottom: 14px;
+}
+#f-finished:active { background: var(--surface-2); }
+.sheet-more { display: flex; gap: 10px; margin-top: 10px; }
+.sheet-more .btn { flex: 1; min-height: 48px; padding: 10px 8px; font-size: 0.875rem; }
+.sheet-more .btn[aria-pressed="true"] { border-color: var(--bottle); color: var(--accent-text); }
