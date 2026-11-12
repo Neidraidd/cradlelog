@@ -17,6 +17,7 @@ const state = {
   hideBreast: LS.get('cradlelog.hideBreast', false),
   feedMin: LS.get('cradlelog.feedMin', 3),
   feedMax: LS.get('cradlelog.feedMax', 4),
+  feedSizes: LS.get('cradlelog.feedSizes', [90, 120]),
   tab: LS.get('cradlelog.tab', 'log'),
   range: LS.get('cradlelog.range', 14),
   unit: LS.get('cradlelog.unit', 'kg'),      // weigh-in units on this phone
@@ -283,6 +284,7 @@ function applySettings(s) {
   if (s.babyName !== undefined) { state.babyName = s.babyName || ''; LS.set('cradlelog.babyName', state.babyName); }
   if (s.birth !== undefined) { state.birth = s.birth || null; LS.set('cradlelog.birth', state.birth); }
   if (s.hideBreast !== undefined) { state.hideBreast = !!s.hideBreast; LS.set('cradlelog.hideBreast', state.hideBreast); }
+  if (Array.isArray(s.feedSizes) && s.feedSizes.length) { state.feedSizes = s.feedSizes; LS.set('cradlelog.feedSizes', s.feedSizes); }
   if (s.feedMin !== undefined && s.feedMax !== undefined) {
     state.feedMin = Number(s.feedMin); state.feedMax = Number(s.feedMax);
     LS.set('cradlelog.feedMin', state.feedMin); LS.set('cradlelog.feedMax', state.feedMax);
@@ -725,7 +727,6 @@ $('#tab-trends').addEventListener('click', (ev) => {
 // ---------- entry sheet ----------
 const sheet = $('#sheet');
 let draft = null;
-const ML_PRESETS = [15, 30, 45, 60, 75, 90, 120];
 
 function lastMl() {
   const b = state.entries.filter((e) => e.kind === 'bottle' && e.ml);
@@ -782,7 +783,7 @@ function syncSheet() {
   if (k === 'weight') syncWeight();
   $$('#f-side button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === draft.side)));
   $$('.toggle').forEach((b) => b.setAttribute('aria-pressed', String(!!draft[b.dataset.flag])));
-  $('#ml-chips').innerHTML = ML_PRESETS.map((v) => `<button type="button" data-ml="${v}" aria-pressed="${Number($('#f-ml').value) === v}" class="${Number($('#f-ml').value) === v ? 'on' : ''}">${v}</button>`).join('');
+  $('#ml-chips').innerHTML = state.feedSizes.map((v) => `<button type="button" data-ml="${v}" aria-pressed="${Number($('#f-ml').value) === v}" class="${Number($('#f-ml').value) === v ? 'on' : ''}">${v}</button>`).join('');
 }
 
 $$('.quick-btn').forEach((b) => b.addEventListener('click', () => openSheet(b.dataset.kind)));
@@ -945,6 +946,7 @@ $('#open-settings').addEventListener('click', () => {
   $('#s-name').value = state.babyName;
   $('#s-birth').value = state.birth || '';
   $('#s-breast').checked = !state.hideBreast;
+  $('#s-sizes').value = state.feedSizes.join(', ');
   fillFeedGap();
   refreshAlerts();
   settings.showModal();
@@ -1067,6 +1069,16 @@ function saveFeedGap(changed) {
 }
 $('#s-feed-min').addEventListener('change', () => saveFeedGap('min'));
 $('#s-feed-max').addEventListener('change', () => saveFeedGap('max'));
+$('#s-sizes').addEventListener('change', () => {
+  const v = [...new Set($('#s-sizes').value.split(/[^0-9]+/).filter(Boolean).map(Number))]
+    .filter((n) => n >= 1 && n <= 1000).sort((a, b) => a - b).slice(0, 12);
+  if (!v.length) { $('#s-sizes').value = state.feedSizes.join(', '); toast('Enter at least one size in ml, like 90, 120.'); return; }
+  state.feedSizes = v;
+  LS.set('cradlelog.feedSizes', v);
+  $('#s-sizes').value = v.join(', ');
+  api('/api/settings', { method: 'PUT', body: JSON.stringify({ feedSizes: v }) })
+    .catch(() => toast("Couldn't save the feed sizes. Check your signal and try again."));
+});
 $('#s-breast').addEventListener('change', () => {
   state.hideBreast = !$('#s-breast').checked;
   LS.set('cradlelog.hideBreast', state.hideBreast);

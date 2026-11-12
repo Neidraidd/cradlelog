@@ -90,6 +90,14 @@ function safeEq(a, b) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 const needsSetup = () => !passHash();
+// Quick feed sizes (ml) offered when logging a feed; 90 and 120 until changed.
+function feedSizes() {
+  try {
+    const v = JSON.parse(getSetting('feedSizes'));
+    if (Array.isArray(v) && v.length) return v;
+  } catch {}
+  return [90, 120];
+}
 // Family-wide settings, shared by every phone.
 const settingsOut = () => ({
   babyName: getSetting('babyName') || '',
@@ -97,6 +105,7 @@ const settingsOut = () => ({
   hideBreast: getSetting('hideBreast') === '1',
   feedMin: Number(getSetting('feedMin') ?? 3), // hours between feeds, used for the "next feed" countdown
   feedMax: Number(getSetting('feedMax') ?? 4),
+  feedSizes: feedSizes(),
 });
 
 // Sessions: the cookie holds a random token; only its hash is stored, so a copy of the database can't be used to sign in.
@@ -369,6 +378,13 @@ async function api(req, res, url) {
       setSetting('birth', b.birth || '');
     }
     if (b.hideBreast !== undefined) setSetting('hideBreast', b.hideBreast ? '1' : '0');
+    if (b.feedSizes !== undefined) {
+      const v = b.feedSizes;
+      if (!Array.isArray(v) || v.length > 12 || !v.every((n) => Number.isInteger(n) && n >= 1 && n <= 1000)) {
+        return send(res, 400, { error: 'Feed sizes must be whole numbers of ml, up to 12 of them' });
+      }
+      setSetting('feedSizes', JSON.stringify([...new Set(v)].sort((a, c) => a - c)));
+    }
     if (b.feedMin !== undefined || b.feedMax !== undefined) {
       const min = Number(b.feedMin), max = Number(b.feedMax);
       const ok = (h) => Number.isFinite(h) && h >= 0.5 && h <= 12;
