@@ -9,6 +9,7 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 
+const ML_PRESETS = [15, 30, 45, 60, 75, 90, 120]; // amount drunk quick-picks
 const state = {
   entries: LS.get('cradlelog.entries', []),
   outbox: LS.get('cradlelog.outbox', []), // [{op:'put'|'del', entry|id}]
@@ -271,7 +272,7 @@ function summarise(list) {
 }
 
 function describe(e) {
-  if (e.kind === 'bottle') return e.ml ? `${e.ml}ml bottle` : 'Bottle';
+  if (e.kind === 'bottle') return e.ml ? `${e.ml}ml bottle${e.made_ml ? ` (of ${e.made_ml}ml)` : ''}` : 'Bottle';
   if (e.kind === 'breast') return `Breast${e.side ? ` · ${e.side}` : ''}${e.ml ? ` · ${e.ml}ml` : ''}`;
   if (e.kind === 'nappy') return [e.wee && 'Wee', e.poo && 'Poo'].filter(Boolean).join(' + ') || 'Nappy';
   if (e.kind === 'weight') return e.weight_g ? `Weighed ${weightText(e.weight_g)}` : 'Weigh-in';
@@ -733,11 +734,16 @@ function lastMl() {
   return b.length ? b[b.length - 1].ml : 30;
 }
 
+function lastMade() {
+  const b = state.entries.filter((e) => e.kind === 'bottle' && e.made_ml && state.feedSizes.includes(e.made_ml));
+  return b.length ? b[b.length - 1].made_ml : null;
+}
+
 function openSheet(kindOrEntry) {
   const editing = typeof kindOrEntry === 'object';
   draft = editing
     ? { ...kindOrEntry, _edit: true }
-    : { id: crypto.randomUUID(), kind: kindOrEntry, ts: new Date().toISOString(), ml: kindOrEntry === 'bottle' ? lastMl() : null,
+    : { id: crypto.randomUUID(), kind: kindOrEntry, ts: new Date().toISOString(), ml: kindOrEntry === 'bottle' ? lastMl() : null, made_ml: kindOrEntry === 'bottle' ? lastMade() : null,
         side: kindOrEntry === 'breast' ? 'both' : null, poo: false, wee: kindOrEntry === 'nappy', sick: false, note: '', open: false };
   $('#f-time').value = toLocalInput(new Date(draft.ts));
   $('#f-ml').value = draft.ml ?? '';
@@ -783,7 +789,9 @@ function syncSheet() {
   if (k === 'weight') syncWeight();
   $$('#f-side button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === draft.side)));
   $$('.toggle').forEach((b) => b.setAttribute('aria-pressed', String(!!draft[b.dataset.flag])));
-  $('#ml-chips').innerHTML = state.feedSizes.map((v) => `<button type="button" data-ml="${v}" aria-pressed="${Number($('#f-ml').value) === v}" class="${Number($('#f-ml').value) === v ? 'on' : ''}">${v}</button>`).join('');
+  $('#made-wrap').hidden = k !== 'bottle';
+  $('#made-chips').innerHTML = state.feedSizes.map((v) => `<button type="button" data-made="${v}" aria-pressed="${draft.made_ml === v}" class="${draft.made_ml === v ? 'on' : ''}">${v}</button>`).join('');
+  $('#ml-chips').innerHTML = ML_PRESETS.map((v) => `<button type="button" data-ml="${v}" aria-pressed="${Number($('#f-ml').value) === v}" class="${Number($('#f-ml').value) === v ? 'on' : ''}">${v}</button>`).join('');
 }
 
 $$('.quick-btn').forEach((b) => b.addEventListener('click', () => openSheet(b.dataset.kind)));
@@ -820,6 +828,12 @@ $$('.step').forEach((b) => b.addEventListener('click', () => {
 $('#ml-chips').addEventListener('click', (ev) => {
   const b = ev.target.closest('button'); if (!b) return;
   $('#f-ml').value = b.dataset.ml;
+  syncSheet();
+});
+$('#made-chips').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button'); if (!b) return;
+  const v = Number(b.dataset.made);
+  draft.made_ml = draft.made_ml === v ? null : v; // tap again to clear
   syncSheet();
 });
 $('#f-ml').addEventListener('input', syncSheet);
@@ -867,6 +881,7 @@ function entryFromSheet(t, ml, open, weight_g = null) {
     ...rest,
     ts: t.toISOString(),
     ml: draft.kind === 'bottle' || draft.kind === 'breast' ? ml : null,
+    made_ml: draft.kind === 'bottle' ? draft.made_ml ?? null : null,
     side: draft.kind === 'breast' ? draft.side : null,
     note: $('#f-note').value.trim() || null,
     open,

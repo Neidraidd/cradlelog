@@ -50,6 +50,7 @@ const cols = new Set(db.prepare('PRAGMA table_info(entries)').all().map((c) => c
 if (!cols.has('open')) db.exec('ALTER TABLE entries ADD COLUMN open INTEGER NOT NULL DEFAULT 0'); // started, amount to come
 if (!cols.has('end_ts')) db.exec('ALTER TABLE entries ADD COLUMN end_ts TEXT');                   // when a finished feed ended; null = length not recorded
 if (!cols.has('progress_ts')) db.exec('ALTER TABLE entries ADD COLUMN progress_ts TEXT');           // open feeds: when the amount last went up
+if (!cols.has('made_ml')) db.exec('ALTER TABLE entries ADD COLUMN made_ml INTEGER');                 // bottles: total size made up
 if (!cols.has('weight_g')) db.exec('ALTER TABLE entries ADD COLUMN weight_g INTEGER');           // weigh-ins
 // "Who logged it" was tried and dropped (2026-11-06): remove the names entirely, not just hide them.
 const hadNames = cols.has('by_name')
@@ -90,7 +91,7 @@ function safeEq(a, b) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 const needsSetup = () => !passHash();
-// Quick feed sizes (ml) offered when logging a feed; 90 and 120 until changed.
+// Bottle sizes (ml) offered as "bottle made" when logging a bottle; 90 and 120 until changed.
 function feedSizes() {
   try {
     const v = JSON.parse(getSetting('feedSizes'));
@@ -204,6 +205,8 @@ function cleanEntry(b) {
   if (!KINDS.has(b.kind)) throw new Bad('bad kind');
   const ml = b.ml === null || b.ml === undefined || b.ml === '' ? null : Math.round(Number(b.ml));
   if (ml !== null && (!Number.isFinite(ml) || ml < 0 || ml > 1000)) throw new Bad('bad ml');
+  const made = b.kind !== 'bottle' || b.made_ml === null || b.made_ml === undefined || b.made_ml === '' ? null : Math.round(Number(b.made_ml));
+  if (made !== null && (!Number.isFinite(made) || made < 1 || made > 1000)) throw new Bad('bad bottle size');
   const weight = b.kind === 'weight' ? Math.round(Number(b.weight_g)) : null;
   if (b.kind === 'weight' && !(weight >= 500 && weight <= 30000)) throw new Bad('Weight must be between 0.5 kg and 30 kg');
   const open = (b.kind === 'bottle' || b.kind === 'breast') && b.open ? 1 : 0;
@@ -215,6 +218,7 @@ function cleanEntry(b) {
   }
   return {
     end_ts: end,
+    made_ml: made,
     weight_g: weight,
     ts: ts.toISOString(),
     kind: b.kind,
@@ -417,12 +421,12 @@ async function api(req, res, url) {
       e.open = 0; e.end_ts = autoEndTs(e.ts, progress); progress = null;
     }
     // Upsert keeps offline retries idempotent.
-    db.prepare(`INSERT INTO entries (id, ts, kind, ml, side, poo, wee, sick, note, open, weight_g, end_ts, progress_ts, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, kind=excluded.kind, ml=excluded.ml, side=excluded.side,
+    db.prepare(`INSERT INTO entries (id, ts, kind, ml, made_ml, side, poo, wee, sick, note, open, weight_g, end_ts, progress_ts, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET ts=excluded.ts, kind=excluded.kind, ml=excluded.ml, made_ml=excluded.made_ml, side=excluded.side,
         poo=excluded.poo, wee=excluded.wee, sick=excluded.sick, note=excluded.note, open=excluded.open,
         weight_g=excluded.weight_g, end_ts=excluded.end_ts, progress_ts=excluded.progress_ts, updated_at=excluded.updated_at, deleted=0`)
-      .run(id, e.ts, e.kind, e.ml, e.side, e.poo, e.wee, e.sick, e.note, e.open, e.weight_g, e.end_ts, progress, now, now);
+      .run(id, e.ts, e.kind, e.ml, e.made_ml, e.side, e.poo, e.wee, e.sick, e.note, e.open, e.weight_g, e.end_ts, progress, now, now);
     checkAlerts();
     return send(res, 200, rowOut(db.prepare('SELECT * FROM entries WHERE id = ?').get(id)));
   }
