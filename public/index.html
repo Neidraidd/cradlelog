@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cradlelog</title>
-  <meta name="theme-color" content="#14121a">
+  <meta name="theme-color" content="#14131a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Cradlelog">
@@ -72,12 +72,14 @@
         <p><b id="open-what">Bottle in progress</b><span id="open-since"></span></p>
         <button type="button" class="btn primary" id="open-finish">Update</button>
       </div>
+      <div class="h-track" id="feed-track" hidden><div class="h-fill" id="feed-fill"></div></div>
       <div class="next" id="next" hidden>
         <span class="next-when" id="next-when"></span>
         <span class="next-in" id="next-in"></span>
       </div>
-      <dl class="today" id="today"></dl>
     </section>
+
+    <dl class="today today-card" id="today"></dl>
 
     <nav class="quick" aria-label="Log something">
       <button class="quick-btn k-bottle" data-kind="bottle"><svg class="ico" aria-hidden="true"><use href="#i-bottle"/></svg>Bottle</button>
@@ -87,7 +89,7 @@
     </nav>
 
     <div class="tabs" role="tablist">
-      <button role="tab" class="tab" data-tab="log" aria-selected="true">Log</button>
+      <button role="tab" class="tab" data-tab="log" aria-selected="true">Home</button>
       <button role="tab" class="tab" data-tab="trends" aria-selected="false">Trends</button>
     </div>
 
@@ -108,6 +110,7 @@
   <!-- Add / edit sheet -->
   <dialog id="sheet" class="sheet" aria-labelledby="sheet-title">
     <form id="entry-form" method="dialog">
+      <div class="handle" aria-hidden="true"></div>
       <div class="sheet-head">
         <h2 id="sheet-title">Bottle</h2>
         <button type="button" class="icon-btn" id="sheet-close" aria-label="Close">✕</button>
@@ -221,6 +224,7 @@
   <!-- Settings -->
   <dialog id="settings" class="sheet" aria-labelledby="settings-title">
     <form method="dialog">
+      <div class="handle" aria-hidden="true"></div>
       <div class="sheet-head">
         <h2 id="settings-title">Settings</h2>
         <button class="icon-btn" aria-label="Close">✕</button>

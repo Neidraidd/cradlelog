@@ -341,6 +341,9 @@ function renderStatus() {
     $('#since').classList.remove('none');
     $('#since').classList.toggle('late', late);
     $('#last-feed').textContent = `${describe(last)} at ${hm(t)}${dayKey(t) !== dayKey(new Date()) ? ` ${dayLabel(dayKey(t)).toLowerCase()}` : ''}`;
+    // Hero progress: how far through the feed window we are (last feed -> latest due).
+    $('#feed-track').hidden = false;
+    $('#feed-fill').style.width = `${Math.min(100, Math.max(0, ((now - t.getTime()) / (by - t.getTime())) * 100))}%`;
     const next = $('#next');
     next.hidden = false;
     next.classList.toggle('due', now >= from && !late);
@@ -362,6 +365,7 @@ function renderStatus() {
     $('#since').classList.add('none');
     $('#since').classList.remove('late');
     $('#next').hidden = true;
+    $('#feed-track').hidden = true;
     $('#open-feed').hidden = true;
     $('#last-feed').textContent = state.hideBreast ? 'Tap Bottle below to log the first one.' : 'Tap Bottle or Breast below to log the first one.';
   }
